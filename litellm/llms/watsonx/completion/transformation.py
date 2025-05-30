@@ -300,9 +300,16 @@ class IBMWatsonXAIConfig(IBMWatsonXMixin, BaseConfig):
             json_resp["results"][0]["stop_reason"]
         )
         if json_resp.get("created_at"):
-            model_response.created = int(
-                datetime.fromisoformat(json_resp["created_at"]).timestamp()
-            )
+            created_at = json_resp["created_at"]
+            try:
+                model_response.created = int(datetime.fromisoformat(created_at).timestamp())
+            except ValueError:
+                if created_at.endswith("Z"):
+                    created_at = created_at[:-1] + "+00:00"
+                    model_response.created = int(datetime.fromisoformat(created_at).timestamp())
+                else:
+                    # If ValueError happens but no trailing 'Z', re-raise or handle differently
+                    raise
         else:
             model_response.created = int(time.time())
         usage = Usage(
